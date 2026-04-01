@@ -233,7 +233,7 @@ export default function CashbookPage() {
       <div className="flex-none">
         <div className="flex justify-between items-center mb-2 py-1">
         <h1 className="text-xl font-black text-blue-500">💰 Money</h1>
-        <div className="flex gap-1">
+        <div className="flex gap-2">
 
           {/* [추가] 엑셀 다운로드 버튼 */}
           <button 
@@ -253,7 +253,7 @@ export default function CashbookPage() {
             📈
           </button>
 
-          <button onClick={() => setIsCategoryModalOpen(true)} className="bg-gray-300 p-2 rounded-lg text-lg hover:bg-gray-500">⚙️</button>
+          <button onClick={() => setIsCategoryModalOpen(true)} className="bg-gray-400 p-2 rounded-lg text-lg hover:bg-gray-500">⚙️</button>
           <button onClick={() => { resetForm(); setIsModalOpen(true); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-md">+ NEW</button>
         </div>
         
