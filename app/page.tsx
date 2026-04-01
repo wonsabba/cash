@@ -223,8 +223,8 @@ export default function CashbookPage() {
     <div className="w-full h-screen max-w-[1400px] mx-auto p-4 font-sans text-gray-800 flex flex-col">
 
       <div className="flex-none">
-        <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-black text-blue-600">💰 Money</h1>
+        <div className="flex justify-between items-center mb-3">
+        <h1 className="text-2xl font-black text-blue-500">💰 Money</h1>
         <div className="flex gap-2">
 
           {/* [추가] 엑셀 다운로드 버튼 */}
@@ -247,14 +247,14 @@ export default function CashbookPage() {
           </button>
 
           <button onClick={() => setIsCategoryModalOpen(true)} className="bg-gray-100 p-2.5 rounded-xl text-lg hover:bg-gray-200">⚙️</button>
-          <button onClick={() => { resetForm(); setIsModalOpen(true); }} className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-md">+ 신규</button>
+          <button onClick={() => { resetForm(); setIsModalOpen(true); }} className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-md">+ NEW</button>
         </div>
         
       </div>
 
       {/* 2. [수정] 목록 헤더 바로 위에 잔액 표시 */}
       <div className="flex justify-between items-end mb-2 px-1">
-        <span className="text-xs font-bold text-gray-400 tracking-wider">내역</span>
+        <span className="text-xs font-bold text-gray-400 tracking-wider"></span>
         <div className="text-right">
           {/* <span className="text-[10px] font-bold text-gray-400 uppercase block mb-0.5">Total Balance</span> */}
           <span className={`text-xl font-black ${totalBalance >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
@@ -412,14 +412,14 @@ export default function CashbookPage() {
               {getMonthlyStats().map(([month, data]) => (
                 <div key={month} className="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex justify-between items-center">
                   <div>
-                    <div className="text-xs text-gray-400 font-bold mb-1">{month}</div>
+                    <div className="text-xx text-gray-600 font-bold mb-1">{month}</div>
                     <div className="flex gap-3 text-sm">
-                      <span className="text-blue-500">↑ {data.in.toLocaleString()}</span>
-                      <span className="text-red-400">↓ {data.out.toLocaleString()}</span>
+                      <span className="text-blue-600">↑ {data.in.toLocaleString()}</span>
+                      <span className="text-red-600">↓ {data.out.toLocaleString()}</span>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-[10px] text-gray-400">합계</div>
+                    <div className="text-[12px] text-gray-600">잔액</div>
                     <div className={`font-black text-lg ${(data.in - data.out) >= 0 ? 'text-gray-700' : 'text-red-500'}`}>
                       {(data.in - data.out).toLocaleString()}
                     </div>
