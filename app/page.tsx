@@ -12,7 +12,7 @@ interface Category {
 interface CashLog {
   id: number;
   transaction_date: string;
-  type: 'income' | 'expense';
+  type: 'IN' | 'OUT';
   method: 'card' | 'cash';
   category: string;
   description: string;
@@ -26,10 +26,13 @@ export default function CashbookPage() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  
+  // [추가] 수정 중인 로그의 ID를 추적
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   const [formData, setFormData] = useState({
     transaction_date: new Date().toISOString().split('T')[0],
-    type: 'expense' as 'income' | 'expense',
+    type: 'OUT' as 'IN' | 'OUT',
     method: 'cash' as 'card' | 'cash',
     category: '',
     description: '',
@@ -41,7 +44,7 @@ export default function CashbookPage() {
 
   const initData = async () => {
     setLoading(true);
-    const { data: catData } = await supabase.from('categories').select('*').order('id');
+    const { data: catData } = await supabase.from('categories').select('*').order('code');
     if (catData) {
       setCategories(catData);
       if (catData.length > 0 && !formData.category) {
@@ -55,15 +58,70 @@ export default function CashbookPage() {
 
   useEffect(() => { initData(); }, []);
 
+  // [수정] 신규 저장 및 수정을 동시에 처리
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.amount || !formData.description) return alert('내역과 금액을 입력해주세요!');
-    const { error } = await supabase.from('cash_logs').insert([{ ...formData, amount: Number(formData.amount) }]);
-    if (!error) {
-      setFormData(prev => ({ ...prev, description: '', amount: '', memo: '' }));
-      setIsModalOpen(false);
-      initData();
+
+    const payload = {
+      ...formData,
+      amount: Number(formData.amount)
+    };
+
+    if (editingId) {
+      // 수정 모드 (UPDATE)
+      const { error } = await supabase.from('cash_logs').update(payload).eq('id', editingId);
+      if (error) alert('수정 오류: ' + error.message);
+    } else {
+      // 신규 모드 (INSERT)
+      const { error } = await supabase.from('cash_logs').insert([payload]);
+      if (error) alert('저장 오류: ' + error.message);
     }
+
+    resetForm();
+    initData();
+  };
+
+  // [추가] 더블클릭 시 수정 모드로 전환
+  const handleEdit = (log: CashLog) => {
+    setEditingId(log.id);
+    setFormData({
+      transaction_date: log.transaction_date,
+      type: log.type,
+      method: log.method,
+      category: log.category,
+      description: log.description,
+      amount: String(log.amount),
+      memo: log.memo || '',
+    });
+    setIsModalOpen(true);
+  };
+
+  // [추가] 내역 삭제 함수
+  const handleDeleteLog = async () => {
+    if (!editingId) return;
+    if (!confirm('이 내역을 삭제하시겠습니까?')) return;
+
+    const { error } = await supabase.from('cash_logs').delete().eq('id', editingId);
+    if (error) alert('삭제 실패: ' + error.message);
+    
+    resetForm();
+    initData();
+  };
+
+  // [추가] 폼 초기화 공통 함수
+  const resetForm = () => {
+    setFormData({
+      transaction_date: new Date().toISOString().split('T')[0],
+      type: 'OUT',
+      method: 'cash',
+      category: categories[0]?.code || '',
+      description: '',
+      amount: '',
+      memo: '',
+    });
+    setEditingId(null);
+    setIsModalOpen(false);
   };
 
   const handleAddCategory = async () => {
@@ -84,25 +142,23 @@ export default function CashbookPage() {
   return (
     <div className="w-full max-w-[1400px] mx-auto p-4 font-sans text-gray-800">
       
-      {/* 헤더 */}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-black text-blue-600">💰 현금출납부</h1>
+        <h1 className="text-2xl font-black text-blue-600">💰 Money</h1>
         <div className="flex gap-2">
-          <button onClick={() => setIsCategoryModalOpen(true)} className="bg-gray-100 p-2.5 rounded-xl text-lg hover:bg-gray-200 transition-all">⚙️</button>
-          <button onClick={() => setIsModalOpen(true)} className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-md hover:bg-blue-700 transition-all">+ 추가</button>
+          <button onClick={() => setIsCategoryModalOpen(true)} className="bg-gray-100 p-2.5 rounded-xl text-lg hover:bg-gray-200">⚙️</button>
+          <button onClick={() => { resetForm(); setIsModalOpen(true); }} className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-md">+ 신규</button>
         </div>
       </div>
 
-      {/* 테이블 */}
       <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
         <table className="w-full text-left border-collapse table-fixed">
           <thead>
-            <tr className="bg-gray-50 border-b text-gray-400 text-xs uppercase">
-              <th className="p-3 w-[70px] md:w-[100px] font-semibold text-center">날짜</th>
+            <tr className="bg-gray-50 border-b text-gray-500 text-xs uppercase">
+              <th className="p-3 w-[80px] md:w-[100px] font-semibold text-center">날짜</th>
               <th className="p-3 w-[55px] md:w-[70px] font-semibold text-center">구분</th>
-              <th className="p-3 w-[85px] md:w-[130px] font-semibold">분류</th>
-              <th className="p-3 w-auto font-semibold">내역</th>
-              <th className="p-3 w-[90px] md:w-[150px] font-semibold text-right">금액</th>
+              <th className="p-3 w-[60px] md:w-[130px] font-semibold">분류</th>
+              <th className="p-3 w-auto font-semibold text-center">내역</th>
+              <th className="p-3 w-[90px] md:w-[150px] font-semibold text-center">금액</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -110,26 +166,31 @@ export default function CashbookPage() {
               <tr><td colSpan={5} className="p-10 text-center text-sm text-gray-400">로딩 중...</td></tr>
             ) : (
               logs.map((log) => (
-                <tr key={log.id} className="hover:bg-blue-50/30 transition-colors">
-                  <td className="p-3 text-center text-sm text-gray-400 tabular-nums">
-                    {log.transaction_date.slice(5).replace('-', '/')}
+                <tr 
+                  key={log.id} 
+                  onDoubleClick={() => handleEdit(log)} // [추가] 더블클릭 이벤트
+                  className="hover:bg-blue-50/30 transition-colors cursor-pointer select-none"
+                  title="더블클릭하여 수정"
+                >
+                  <td className="p-3 text-center text-sm text-gray-500 tabular-nums">
+                    {log.transaction_date.replace(/-/g, '.')}
                   </td>
-                  <td className={`p-3 text-center text-sm font-bold ${log.type === 'income' ? 'text-blue-500' : 'text-red-400'}`}>
-                    {log.type === 'income' ? '수입' : '지출'}
+                  <td className={`p-3 text-center text-sm font-bold ${log.type === 'IN' ? 'text-blue-500' : 'text-red-400'}`}>
+                    {log.type === 'IN' ? '수입' : '지출'}
                   </td>
                   <td className="p-3 truncate">
-                    <div className="flex flex-col overflow-hidden">
+                    <div className="flex flex-col">
                       <span className="font-bold text-gray-700 text-sm truncate">{getCategoryName(log.category)}</span>
-                      <span className="text-[10px] text-gray-300 uppercase leading-tight">{log.method}</span>
+                      <span className="text-[10px] text-gray-400 uppercase">{log.method}</span>
                     </div>
                   </td>
-                  <td className="p-3 overflow-hidden">
+                  <td className="p-3">
                     <div className="text-sm text-gray-800 font-medium truncate md:whitespace-normal">
                       {log.description}
                     </div>
                     {log.memo && <div className="text-[11px] text-gray-400 italic mt-0.5 truncate">ㄴ {log.memo}</div>}
                   </td>
-                  <td className={`p-3 text-right font-black text-sm md:text-base tabular-nums ${log.type === 'income' ? 'text-blue-600' : 'text-red-500'}`}>
+                  <td className={`p-3 text-right font-black text-sm md:text-base tabular-nums ${log.type === 'IN' ? 'text-blue-600' : 'text-red-500'}`}>
                     {log.amount.toLocaleString()}
                   </td>
                 </tr>
@@ -139,20 +200,22 @@ export default function CashbookPage() {
         </table>
       </div>
 
-      {/* [1] 신규 내역 추가 모달 (중앙 정렬 수정) */}
+      {/* 신규/수정 모달 */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden animate-in zoom-in duration-200 shadow-2xl">
             <div className="p-4 border-b flex justify-between items-center bg-gray-50">
-              <h2 className="font-bold text-gray-700">✍️ 새 내역 기록</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 text-2xl px-2">&times;</button>
+              <h2 className="font-bold text-gray-700">{editingId ? '📝 내역 수정' : '✍️ 신규 내역'}</h2>
+              <button onClick={resetForm} className="text-gray-400 text-2xl px-2">&times;</button>
             </div>
+            
             <form onSubmit={handleSubmit} className="p-6 space-y-3">
+              {/* 입력 필드들 (날짜, 구분, 결제수단, 카테고리, 내역, 금액, 메모) */}
               <div className="grid grid-cols-2 gap-2">
                 <input type="date" value={formData.transaction_date} onChange={(e) => setFormData({...formData, transaction_date: e.target.value})} className="p-3 bg-gray-100 rounded-xl text-sm outline-none" />
                 <select value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value as any})} className="p-3 bg-gray-100 rounded-xl text-sm outline-none">
-                  <option value="expense">지출</option>
-                  <option value="income">수입</option>
+                  <option value="OUT">지출</option>
+                  <option value="IN">수입</option>
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-2">
@@ -167,13 +230,30 @@ export default function CashbookPage() {
               <input type="text" placeholder="어디에 쓰셨나요?" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full p-3 bg-gray-100 rounded-xl text-sm outline-none" />
               <input type="number" placeholder="0" value={formData.amount} onChange={(e) => setFormData({...formData, amount: e.target.value})} className="w-full p-4 bg-blue-50 text-blue-600 text-2xl font-black text-right rounded-2xl outline-none" />
               <input type="text" placeholder="메모 (선택)" value={formData.memo} onChange={(e) => setFormData({...formData, memo: e.target.value})} className="w-full p-3 bg-gray-100 rounded-xl text-sm outline-none" />
-              <button type="submit" className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold text-lg shadow-lg hover:bg-blue-700 transition-all">저장하기</button>
+              
+              {/* [수정된 버튼 영역] */}
+              <div className="flex flex-col gap-2 pt-4">
+                <button type="submit" className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold text-lg shadow-lg hover:bg-blue-700 transition-all">
+                  {editingId ? '수정 완료' : '저장하기'}
+                </button>
+                
+                <div className="flex gap-2">
+                  {editingId && (
+                    <button type="button" onClick={handleDeleteLog} className="flex-1 py-3 bg-red-50 text-red-500 rounded-xl font-bold text-sm hover:bg-red-100 transition-colors">
+                      삭제
+                    </button>
+                  )}
+                  <button type="button" onClick={resetForm} className="flex-1 py-3 bg-gray-100 text-gray-500 rounded-xl font-bold text-sm hover:bg-gray-200 transition-colors">
+                    취소
+                  </button>
+                </div>
+              </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* [2] 카테고리 관리 모달 (중앙 정렬 유지) */}
+      {/* 카테고리 모달은 기존과 동일 */}
       {isCategoryModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
           <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in zoom-in duration-200">
@@ -186,16 +266,16 @@ export default function CashbookPage() {
                 {categories.map(cat => (
                   <div key={cat.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
                     <span className="text-sm font-bold">{cat.name} <span className="text-[10px] font-normal text-gray-400 ml-1">{cat.code}</span></span>
-                    <button onClick={() => handleDeleteCategory(cat.id)} className="text-red-400 font-bold text-xs hover:text-red-600 transition-colors">삭제</button>
+                    <button onClick={() => handleDeleteCategory(cat.id)} className="text-red-400 font-bold text-xs">삭제</button>
                   </div>
                 ))}
               </div>
               <div className="bg-blue-50 p-4 rounded-2xl space-y-2">
                 <div className="grid grid-cols-2 gap-2">
-                  <input type="text" placeholder="코드(영문)" value={newCat.code} onChange={(e) => setNewCat({...newCat, code: e.target.value})} className="w-full p-2.5 rounded-lg text-xs outline-none border-none" />
-                  <input type="text" placeholder="이름(한글)" value={newCat.name} onChange={(e) => setNewCat({...newCat, name: e.target.value})} className="w-full p-2.5 rounded-lg text-xs outline-none border-none" />
+                  <input type="text" placeholder="코드" value={newCat.code} onChange={(e) => setNewCat({...newCat, code: e.target.value})} className="w-full p-2.5 rounded-lg text-xs border-none outline-none" />
+                  <input type="text" placeholder="이름" value={newCat.name} onChange={(e) => setNewCat({...newCat, name: e.target.value})} className="w-full p-2.5 rounded-lg text-xs border-none outline-none" />
                 </div>
-                <button onClick={handleAddCategory} className="w-full bg-blue-600 text-white py-2.5 rounded-xl font-bold text-xs shadow-md">추가</button>
+                <button onClick={handleAddCategory} className="w-full bg-blue-600 text-white py-2.5 rounded-xl font-bold text-xs">추가</button>
               </div>
             </div>
           </div>

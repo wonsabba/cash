@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "deploy": "git add . && git commit -m \"deploy\" && git push origin main"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.101.1",
