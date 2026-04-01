@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/utils/supabase';
+import * as XLSX from 'xlsx'; // [추가] 엑셀 라이브러리
 
 interface Category {
   id: number;
@@ -26,8 +27,6 @@ export default function CashbookPage() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
-  
-  // [추가] 수정 중인 로그의 ID를 추적
   const [editingId, setEditingId] = useState<number | null>(null);
 
   const [formData, setFormData] = useState({
@@ -139,12 +138,48 @@ export default function CashbookPage() {
 
   const getCategoryName = (code: string) => categories.find(c => c.code === code)?.name || code;
 
+  // [추가] 엑셀 다운로드 핸들러
+  const downloadExcel = () => {
+    if (logs.length === 0) return alert('다운로드할 내역이 없습니다.');
+
+    // 1. 데이터 가공 (엑셀에 표시될 한글 헤더 설정)
+    const excelData = logs.map(log => ({
+      '날짜': log.transaction_date,
+      '구분': log.type === 'IN' ? '수입' : '지출',
+      '카테고리': getCategoryName(log.category),
+      '내역': log.description,
+      '결제수단': log.method === 'card' ? '카드' : '현금',
+      '금액': log.amount,
+      '메모': log.memo || ''
+    }));
+
+    // 2. 워크시트 생성
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "현금출납부");
+
+    // 3. 파일 다운로드 (파일명에 오늘 날짜 포함)
+    const today = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(workbook, `Money_내역_${today}.xlsx`);
+  };
+
   return (
     <div className="w-full max-w-[1400px] mx-auto p-4 font-sans text-gray-800">
       
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-black text-blue-600">💰 Money</h1>
         <div className="flex gap-2">
+
+          {/* [추가] 엑셀 다운로드 버튼 */}
+          <button 
+            onClick={downloadExcel}
+            className="p-2.5 bg-green-50 text-green-600 rounded-xl hover:bg-green-600 hover:text-white transition-all flex items-center gap-1 shadow-sm border border-green-100"
+            title="엑셀 다운로드"
+          >
+            <span className="text-xl">📊</span>
+            <span className="hidden md:inline text-xs font-bold">Excel</span>
+          </button>
+          
           <button onClick={() => setIsCategoryModalOpen(true)} className="bg-gray-100 p-2.5 rounded-xl text-lg hover:bg-gray-200">⚙️</button>
           <button onClick={() => { resetForm(); setIsModalOpen(true); }} className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-md">+ 신규</button>
         </div>
