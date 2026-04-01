@@ -12,12 +12,27 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// export const metadata: Metadata = {
+//   title: 'Money',
+//   description: 'Brandon 자산 관리',
+//   icons: {
+//     icon: '/favicon.ico', // 기본 브라우저 탭 아이콘
+//     apple: '/touch-icon.png', // [중요] 삼성브라우저/아이폰 홈 화면 아이콘
+//   },
+// };
+
 export const metadata: Metadata = {
-  title: 'Money',
-  description: 'Brandon 자산 관리',
+  title: "Money",
+  description: "Brandon 자산 관리",
   icons: {
-    icon: '/favicon.ico', // 기본 브라우저 탭 아이콘
-    apple: '/touch-icon.png', // [중요] 삼성브라우저/아이폰 홈 화면 아이콘
+    icon: "/touch-icon.png",         // 일반 브라우저 아이콘
+    apple: "/touch-icon.png",        // iOS (아이폰/아이패드) 홈 화면 아이콘
+  },
+  // 안드로이드 및 기타 모바일 기기를 위한 설정
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Money",
   },
 };
 

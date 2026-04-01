@@ -33,6 +33,14 @@ export default function CashbookPage() {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false); // [추가] 커스텀 확인창 상태
   const [confirmConfig, setConfirmConfig] = useState({ title: '', message: '', action: () => {} });
 
+  const getToday = () => {
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   // [추가] 커스텀 확인창 호출 함수
   const openConfirm = (title: string, message: string, action: () => void) => {
     setConfirmConfig({ title, message, action });
@@ -40,7 +48,7 @@ export default function CashbookPage() {
   };
 
   const [formData, setFormData] = useState({
-    transaction_date: new Date().toISOString().split('T')[0],
+    transaction_date: getToday(),
     type: 'OUT' as 'IN' | 'OUT',
     method: 'cash' as 'card' | 'cash',
     category: '',
@@ -125,7 +133,7 @@ export default function CashbookPage() {
   // [추가] 폼 초기화 공통 함수
   const resetForm = () => {
     setFormData({
-      transaction_date: new Date().toISOString().split('T')[0],
+      transaction_date: getToday(),
       type: 'OUT',
       method: 'cash',
       category: categories[0]?.code || '',
@@ -223,31 +231,30 @@ export default function CashbookPage() {
     <div className="w-full h-screen max-w-[1400px] mx-auto p-4 font-sans text-gray-800 flex flex-col">
 
       <div className="flex-none">
-        <div className="flex justify-between items-center mb-3">
-        <h1 className="text-2xl font-black text-blue-500">💰 Money</h1>
-        <div className="flex gap-2">
+        <div className="flex justify-between items-center mb-2 py-1">
+        <h1 className="text-xl font-black text-blue-500">💰 Money</h1>
+        <div className="flex gap-1">
 
           {/* [추가] 엑셀 다운로드 버튼 */}
           <button 
             onClick={downloadExcel}
-            className="p-2.5 bg-green-50 text-green-600 rounded-xl hover:bg-green-600 hover:text-white transition-all flex items-center gap-1 shadow-sm border border-green-100"
+            className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-600 hover:text-white transition-all flex items-center gap-1 shadow-sm border border-green-100"
             title="엑셀 다운로드"
           >
             <span className="text-xl">📊</span>
-            <span className="hidden md:inline text-xs font-bold">Excel</span>
           </button>
 
           {/* [추가] 통계 버튼 */}
           <button 
             onClick={() => setIsStatsModalOpen(true)}
-            className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm border border-indigo-100"
+            className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-all shadow-sm border border-indigo-100"
             title="월별 통계"
           >
             📈
           </button>
 
-          <button onClick={() => setIsCategoryModalOpen(true)} className="bg-gray-100 p-2.5 rounded-xl text-lg hover:bg-gray-200">⚙️</button>
-          <button onClick={() => { resetForm(); setIsModalOpen(true); }} className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-md">+ NEW</button>
+          <button onClick={() => setIsCategoryModalOpen(true)} className="bg-gray-300 p-2 rounded-lg text-lg hover:bg-gray-500">⚙️</button>
+          <button onClick={() => { resetForm(); setIsModalOpen(true); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-md">+ NEW</button>
         </div>
         
       </div>
@@ -297,7 +304,7 @@ export default function CashbookPage() {
                   <td className="p-3 truncate">
                     <div className="flex flex-col">
                       <span className="font-bold text-gray-700 text-sm truncate">{getCategoryName(log.category)}</span>
-                      <span className="text-[10px] text-gray-400 uppercase">{log.method}</span>
+                      <span className="text-[12px] text-gray-500 uppercase">{log.method}</span>
                     </div>
                   </td>
                   <td className="p-3">
@@ -330,16 +337,56 @@ export default function CashbookPage() {
               {/* 입력 필드들 (날짜, 구분, 결제수단, 카테고리, 내역, 금액, 메모) */}
               <div className="grid grid-cols-2 gap-2">
                 <input type="date" value={formData.transaction_date} onChange={(e) => setFormData({...formData, transaction_date: e.target.value})} className="p-3 bg-gray-100 rounded-xl text-sm outline-none" />
-                <select value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value as any})} className="p-3 bg-gray-100 rounded-xl text-sm outline-none">
-                  <option value="OUT">지출</option>
-                  <option value="IN">수입</option>
-                </select>
+                <div className="inline-flex items-center bg-gray-100 rounded-xl p-1 border border-gray-200 shadow-inner w-full">
+                  <label className={`flex-1 cursor-pointer text-center rounded-lg px-3 py-2 text-sm font-bold transition-colors ${formData.type === 'OUT' ? 'bg-white text-red-500 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+                    <input
+                      type="radio"
+                      name="type"
+                      value="OUT"
+                      checked={formData.type === 'OUT'}
+                      onChange={() => setFormData({...formData, type: 'OUT'})}
+                      className="hidden"
+                    />
+                    지출
+                  </label>
+                  <label className={`flex-1 cursor-pointer text-center rounded-lg px-3 py-2 text-sm font-bold transition-colors ${formData.type === 'IN' ? 'bg-white text-blue-500 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+                    <input
+                      type="radio"
+                      name="type"
+                      value="IN"
+                      checked={formData.type === 'IN'}
+                      onChange={() => setFormData({...formData, type: 'IN'})}
+                      className="hidden"
+                    />
+                    수입
+                  </label>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <select value={formData.method} onChange={(e) => setFormData({...formData, method: e.target.value as any})} className="p-3 bg-gray-100 rounded-xl text-sm outline-none">
-                  <option value="cash">현금</option>
-                  <option value="card">카드</option>
-                </select>
+                <div className="inline-flex items-center bg-gray-100 rounded-xl p-1 border border-gray-200 shadow-inner w-full">
+                  <label className={`flex-1 cursor-pointer text-center rounded-lg px-3 py-2 text-sm font-bold transition-colors ${formData.method === 'cash' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+                    <input
+                      type="radio"
+                      name="method"
+                      value="cash"
+                      checked={formData.method === 'cash'}
+                      onChange={() => setFormData({...formData, method: 'cash'})}
+                      className="hidden"
+                    />
+                    현금
+                  </label>
+                  <label className={`flex-1 cursor-pointer text-center rounded-lg px-3 py-2 text-sm font-bold transition-colors ${formData.method === 'card' ? 'bg-white text-orange-500 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+                    <input
+                      type="radio"
+                      name="method"
+                      value="card"
+                      checked={formData.method === 'card'}
+                      onChange={() => setFormData({...formData, method: 'card'})}
+                      className="hidden"
+                    />
+                    카드
+                  </label>
+                </div>
                 <select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} className="p-3 bg-gray-100 rounded-xl text-sm outline-none">
                   {categories.map(cat => <option key={cat.code} value={cat.code}>{cat.name}</option>)}
                 </select>
