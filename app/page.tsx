@@ -220,9 +220,10 @@ export default function CashbookPage() {
   }, 0);
 
   return (
-    <div className="w-full max-w-[1400px] mx-auto p-4 font-sans text-gray-800">
+    <div className="w-full h-screen max-w-[1400px] mx-auto p-4 font-sans text-gray-800 flex flex-col">
 
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex-none">
+        <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-black text-blue-600">💰 Money</h1>
         <div className="flex gap-2">
 
@@ -261,12 +262,13 @@ export default function CashbookPage() {
           </span>
         </div>
       </div>
+      </div>
 
-      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-        
+      <div className="flex-1 min-h-0 bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+        <div className="h-full overflow-y-auto">
         
         <table className="w-full text-left border-collapse table-fixed">
-          <thead>
+          <thead className="sticky top-0 z-10">
             <tr className="bg-gray-50 border-b text-gray-500 text-xs uppercase">
               <th className="p-3 w-[80px] md:w-[100px] font-semibold text-center">날짜</th>
               <th className="p-3 w-[55px] md:w-[70px] font-semibold text-center">구분</th>
@@ -312,6 +314,7 @@ export default function CashbookPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* 신규/수정 모달 */}
