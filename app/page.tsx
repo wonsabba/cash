@@ -303,14 +303,14 @@ export default function CashbookPage() {
             <img 
               src="/GV80.jpg" 
               alt="GV80" 
-              className="w-11 h-11 rounded-lg object-cover shadow-sm border border-gray-100" // rounded-lg로 모서리만 부드럽게
+              className="w-10 h-10 rounded-lg object-cover shadow-sm border border-gray-100" // rounded-lg로 모서리만 부드럽게
             />
           </Link>
 
           {/* 엑셀 다운로드 버튼 */}
           <button 
             onClick={downloadExcel}
-            className="w-11 h-11 bg-green-50 text-green-600 rounded-lg hover:bg-green-600 hover:text-white transition-all flex items-center justify-center shadow-sm border border-green-200"
+            className="w-10 h-10 bg-green-50 text-green-600 rounded-lg hover:bg-green-600 hover:text-white transition-all flex items-center justify-center shadow-sm border border-green-200"
             title="엑셀 다운로드"
           >
             {/* leading-none을 주어 이모지 자체의 줄간격을 없앱니다. */}
@@ -320,7 +320,7 @@ export default function CashbookPage() {
           {/* [추가] 통계 버튼 */}
           <button 
             onClick={() => setIsStatsModalOpen(true)}
-            className="w-11 h-11 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-all shadow-sm border border-indigo-100"
+            className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-all shadow-sm border border-indigo-100"
             title="월별 통계"
           >
             <span className="text-2xl leading-none">📈</span>
@@ -328,7 +328,7 @@ export default function CashbookPage() {
 
           <button 
             onClick={() => setIsCategoryModalOpen(true)} 
-            className="w-11 h-11 bg-gray-600 rounded-lg hover:bg-gray-600"><span className="text-2xl leading-none">⚙️</span>
+            className="w-10 h-10 bg-gray-600 rounded-lg hover:bg-gray-600"><span className="text-2xl leading-none">⚙️</span>
           </button>
           <button 
             onClick={() => { resetForm(); setIsModalOpen(true); }} 
