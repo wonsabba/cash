@@ -111,11 +111,13 @@ export default function CashbookPage() {
       return;
     }
 
+    // 3. 카테고리 체크 (카테고리가 하나도 없는 경우)
     const payload = {
       ...formData,
       amount: Number(formData.amount)
     };
 
+    // 수정 모드인지 여부에 따라 적절한 API 호출을 합니다.
     if (editingId) {
       const { error } = await supabase.from('cash_logs').update(payload).eq('id', editingId);
       if (error) alert('수정 오류: ' + error.message);
@@ -128,7 +130,7 @@ export default function CashbookPage() {
     initData();
   };
 
-  // [추가] 더블클릭 시 수정 모드로 전환
+  // 더블클릭 시 수정 모드로 전환
   const handleEdit = (log: CashLog) => {
     setEditingId(log.id);
     setFormData({
@@ -143,7 +145,7 @@ export default function CashbookPage() {
     setIsModalOpen(true);
   };
 
-  // [수정] 내역 삭제 핸들러
+  // 내역 삭제 핸들러
   const handleDeleteLog = () => {
     if (!editingId) return;
     // 브라우저 confirm 대신 커스텀 모달 호출
@@ -159,7 +161,7 @@ export default function CashbookPage() {
     );
   };
 
-  // [추가] 폼 초기화 공통 함수
+  // 폼 초기화 공통 함수
   const resetForm = () => {
     setFormData({
       transaction_date: getToday(),
@@ -174,6 +176,7 @@ export default function CashbookPage() {
     setIsModalOpen(false);
   };
 
+  // 카테고리 저장 핸들러
   const handleAddCategory = async () => {
     // 1. 코드 입력 확인
     if (!newCat.code.trim()) {
@@ -199,7 +202,7 @@ export default function CashbookPage() {
     initData();
   };
 
-  // [수정] 카테고리 삭제 핸들러
+  // 카테고리 삭제 핸들러
   const handleDeleteCategory = (id: number, name: string) => {
     openConfirm(
       '카테고리 삭제',
@@ -211,9 +214,10 @@ export default function CashbookPage() {
     );
   };
 
+  // 카테고리 코드로 명칭을 찾는 헬퍼 함수
   const getCategoryName = (code: string) => categories.find(c => c.code === code)?.name || code;
 
-  // [추가] 엑셀 다운로드 핸들러
+  // 엑셀 다운로드 핸들러
   const downloadExcel = () => {
     if (logs.length === 0) return alert('다운로드할 내역이 없습니다.');
 
@@ -254,7 +258,7 @@ export default function CashbookPage() {
     return Object.entries(stats).sort((a, b) => b[0].localeCompare(a[0]));
   };
 
-  // [추가] 통계 전용 엑셀 다운로드
+  // 통계 전용 엑셀 다운로드
   const downloadStatsExcel = () => {
     const statsData = getMonthlyStats().map(([month, data]) => ({
       '연월': month,
@@ -274,18 +278,22 @@ export default function CashbookPage() {
     return log.type === 'IN' ? acc + log.amount : acc - log.amount;
   }, 0);
 
+  //
   return (
     <div className="w-full h-screen max-w-[1400px] mx-auto p-4 font-sans text-gray-800 flex flex-col">
 
       <div className="flex-none">
         <div className="flex justify-between items-center mb-2 py-1">
-        <h1 className="text-xl font-black text-blue-500">💰 Money</h1>
+        <h1 className="text-xl font-black text-blue-500">
+          💰 <span className={`text-xl font-black ${totalBalance >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
+              {totalBalance.toLocaleString()}
+              </span></h1>
         <div className="flex gap-2">
 
           {/* [추가] 엑셀 다운로드 버튼 */}
           <button 
             onClick={downloadExcel}
-            className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-600 hover:text-white transition-all flex items-center gap-1 shadow-sm border border-green-100"
+            className="p-2 bg-green-60 text-green-600 rounded-lg hover:bg-green-600 hover:text-white transition-all flex items-center gap-1 shadow-sm border border-green-200"
             title="엑셀 다운로드"
           >
             <span className="text-xl">📊</span>
@@ -300,8 +308,14 @@ export default function CashbookPage() {
             📈
           </button>
 
-          <button onClick={() => setIsCategoryModalOpen(true)} className="bg-gray-400 p-2 rounded-lg text-lg hover:bg-gray-500">⚙️</button>
-          <button onClick={() => { resetForm(); setIsModalOpen(true); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-md">+ NEW</button>
+          <button 
+            onClick={() => setIsCategoryModalOpen(true)} 
+            className="bg-gray-500 p-2 rounded-lg text-lg hover:bg-gray-500">⚙️
+          </button>
+          <button 
+            onClick={() => { resetForm(); setIsModalOpen(true); }} 
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-md">+ NEW
+          </button>
         </div>
         
       </div>
@@ -311,9 +325,9 @@ export default function CashbookPage() {
         <span className="text-xs font-bold text-gray-400 tracking-wider"></span>
         <div className="text-right">
           {/* <span className="text-[10px] font-bold text-gray-400 uppercase block mb-0.5">Total Balance</span> */}
-          <span className={`text-xl font-black ${totalBalance >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
-            {totalBalance.toLocaleString()}
-          </span>
+          {/* <span className={`text-xl font-black ${totalBalance >= 0 ? 'text-blue-600' : 'text-red-500'}`}>*/}
+          {/* {totalBalance.toLocaleString()}*/}
+          {/* </span>*/}
         </div>
       </div>
       </div>
@@ -323,7 +337,7 @@ export default function CashbookPage() {
         
         <table className="w-full text-left border-collapse table-fixed">
           <thead className="sticky top-0 z-10">
-            <tr className="bg-gray-50 border-b text-gray-500 text-xs uppercase">
+            <tr className="bg-gray-70 border-b text-gray-700 text-xs uppercase">
               <th className="p-3 w-[80px] md:w-[100px] font-semibold text-center">날짜</th>
               <th className="p-3 w-[55px] md:w-[70px] font-semibold text-center">구분</th>
               <th className="p-3 w-[65px] md:w-[130px] font-semibold">분류</th>
@@ -342,10 +356,10 @@ export default function CashbookPage() {
                   className="hover:bg-blue-50/30 transition-colors cursor-pointer select-none"
                   title="더블클릭하여 수정"
                 >
-                  <td className="p-3 text-center text-sm text-gray-500 tabular-nums">
+                  <td className="p-3 text-center text-sm text-gray-600 tabular-nums">
                     {log.transaction_date.replace(/-/g, '.')}
                   </td>
-                  <td className={`p-3 text-center text-sm font-bold ${log.type === 'IN' ? 'text-blue-500' : 'text-red-400'}`}>
+                  <td className={`p-3 text-center text-sm font-bold ${log.type === 'IN' ? 'text-blue-600' : 'text-red-500'}`}>
                     {log.type === 'IN' ? '수입' : '지출'}
                   </td>
                   <td className="p-3 truncate">
@@ -532,7 +546,7 @@ export default function CashbookPage() {
                   />
                 </div>
                 {/*<form> 밖에 있을 때: 명칭(Ref)로 직접 찍는 게 편함 (현재 카테고리 입력창 필수확인 방식) */}
-                <button onClick={handleAddCategory} className="w-full bg-blue-600 text-white py-2.5 rounded-xl font-bold text-xs">추가</button>
+                <button onClick={handleAddCategory} className="w-full bg-blue-600 text-white py-2.5 rounded-xl font-bold text-xs">저장</button>
               </div>
             </div>
           </div>
