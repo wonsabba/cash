@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';//useRef 임포트
 import { supabase } from '@/utils/supabase';//supabase 임포트 경로 수정
 import * as XLSX from 'xlsx'; // 엑셀 라이브러리
+import Link from "next/link";
 
 // 카테고리 및 내역 타입 정의
 interface Category {
@@ -79,6 +80,7 @@ export default function CashbookPage() {
         setFormData(prev => ({ ...prev, category: catData[0].code }));//첫 번째 카테고리의 코드를 기본값으로 설정합니다.
       }
     }
+    
     //내역 데이터를 트랜잭션 날짜 기준으로 내림차순 정렬하여 가져옵니다.
     const { data: logData } = await supabase.from('cash_logs').select('*').order('transaction_date', { ascending: false });
     if (logData) setLogs(logData);
@@ -290,27 +292,43 @@ export default function CashbookPage() {
               </span></h1>
         <div className="flex gap-2">
 
-          {/* [추가] 엑셀 다운로드 버튼 */}
+          {/* [수정] 차계부 링크 - 배경/외곽선 없이 아이콘만 배치 */}
+          <Link 
+            href="https://my-car-log.vercel.app" 
+            className="flex items-center justify-center transition-opacity hover:opacity-70" // 호버 시 살짝 투명해지는 효과
+            title="주유 관리 바로가기"
+          >
+            {/* src 경로: '/GV80.jpg' (public 폴더 기준) */}
+            {/* 크기: w-9 h-7로 직사각형 비율을 유지하면서 옆 버튼들과 높이를 맞춥니다. */}
+            <img 
+              src="/GV80.jpg" 
+              alt="GV80" 
+              className="w-11 h-11 rounded-lg object-cover shadow-sm border border-gray-100" // rounded-lg로 모서리만 부드럽게
+            />
+          </Link>
+
+          {/* 엑셀 다운로드 버튼 */}
           <button 
             onClick={downloadExcel}
-            className="p-2 bg-green-60 text-green-600 rounded-lg hover:bg-green-600 hover:text-white transition-all flex items-center gap-1 shadow-sm border border-green-200"
+            className="w-11 h-11 bg-green-50 text-green-600 rounded-lg hover:bg-green-600 hover:text-white transition-all flex items-center justify-center shadow-sm border border-green-200"
             title="엑셀 다운로드"
           >
-            <span className="text-xl">📊</span>
+            {/* leading-none을 주어 이모지 자체의 줄간격을 없앱니다. */}
+            <span className="text-2xl leading-none">📊</span> 
           </button>
 
           {/* [추가] 통계 버튼 */}
           <button 
             onClick={() => setIsStatsModalOpen(true)}
-            className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-all shadow-sm border border-indigo-100"
+            className="w-11 h-11 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-all shadow-sm border border-indigo-100"
             title="월별 통계"
           >
-            📈
+            <span className="text-2xl leading-none">📈</span>
           </button>
 
           <button 
             onClick={() => setIsCategoryModalOpen(true)} 
-            className="bg-gray-500 p-2 rounded-lg text-lg hover:bg-gray-500">⚙️
+            className="w-11 h-11 bg-gray-600 rounded-lg hover:bg-gray-600"><span className="text-2xl leading-none">⚙️</span>
           </button>
           <button 
             onClick={() => { resetForm(); setIsModalOpen(true); }} 
@@ -503,7 +521,7 @@ export default function CashbookPage() {
         </div>
       )}
 
-      {/* 카테고리 모달은 기존과 동일 */}
+      {/* 카테고리 모달 */}
       {isCategoryModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
           <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in zoom-in duration-200">
@@ -553,7 +571,7 @@ export default function CashbookPage() {
         </div>
       )}
 
-      {/* [추가] 월별 통계 모달 */}
+      {/* 월별 통계 모달 */}
       {isStatsModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
           <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in duration-200">
@@ -601,6 +619,7 @@ export default function CashbookPage() {
         </div>
       )}
 
+      {/* 커스텀 확인창 (삭제 시) */}
       {isConfirmOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-6">
           <div className="bg-white rounded-3xl w-full max-w-xs overflow-hidden shadow-2xl animate-in zoom-in duration-200">
