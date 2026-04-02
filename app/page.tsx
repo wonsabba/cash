@@ -290,7 +290,7 @@ export default function CashbookPage() {
           💰 <span className={`text-xl font-black ${totalBalance >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
               {totalBalance.toLocaleString()}
               </span></h1>
-        <div className="flex gap-1.5">
+        <div className="flex gap-2">
 
           {/* [수정] 차계부 링크 - 배경/외곽선 없이 아이콘만 배치 */}
           <Link 
@@ -310,7 +310,7 @@ export default function CashbookPage() {
           {/* 엑셀 다운로드 버튼 */}
           <button 
             onClick={downloadExcel}
-            className="w-10 h-10 bg-green-50 text-green-600 rounded-lg hover:bg-green-600 hover:text-white transition-all flex items-center justify-center shadow-sm border border-green-200"
+            className="w-10 h-10 bg-green-100 text-green-600 rounded-lg hover:bg-green-600 hover:text-white transition-all flex items-center justify-center shadow-sm border border-green-300"
             title="엑셀 다운로드"
           >
             {/* leading-none을 주어 이모지 자체의 줄간격을 없앱니다. */}
@@ -320,7 +320,7 @@ export default function CashbookPage() {
           {/* [추가] 통계 버튼 */}
           <button 
             onClick={() => setIsStatsModalOpen(true)}
-            className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-all shadow-sm border border-indigo-100"
+            className="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-all shadow-sm border border-indigo-200"
             title="월별 통계"
           >
             <span className="text-2xl leading-none">📈</span>
@@ -395,7 +395,7 @@ export default function CashbookPage() {
                     <div className="text-sm text-gray-800 font-medium truncate md:whitespace-normal">
                       {log.description}
                     </div>
-                    {log.memo && <div className="text-[11px] text-gray-400 italic mt-0.5 truncate">ㄴ {log.memo}</div>}
+                    {log.memo && <div className="text-[12px] text-gray-500 italic mt-0.5 truncate">- {log.memo}</div>}
                   </td>
                   <td className={`p-3 text-right font-black text-sm md:text-base tabular-nums ${log.type === 'IN' ? 'text-blue-600' : 'text-red-500'}`}>
                     {log.amount.toLocaleString()}
