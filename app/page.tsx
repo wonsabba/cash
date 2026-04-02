@@ -290,7 +290,7 @@ export default function CashbookPage() {
           💰 <span className={`text-xl font-black ${totalBalance >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
               {totalBalance.toLocaleString()}
               </span></h1>
-        <div className="flex gap-2">
+        <div className="flex gap-1.5">
 
           {/* [수정] 차계부 링크 - 배경/외곽선 없이 아이콘만 배치 */}
           <Link 
@@ -328,8 +328,13 @@ export default function CashbookPage() {
 
           <button 
             onClick={() => setIsCategoryModalOpen(true)} 
-            className="w-10 h-10 bg-gray-600 rounded-lg hover:bg-gray-600"><span className="text-2xl leading-none">⚙️</span>
+            // flex, items-center, justify-center가 핵심입니다.
+            className="w-10 h-10 bg-gray-600 rounded-lg hover:bg-gray-700 flex items-center justify-center transition-colors"
+          >
+            {/* leading-none은 이모지 주변의 보이지 않는 줄간격을 0으로 만듭니다. */}
+            <span className="text-2xl leading-none flex">⚙️</span>
           </button>
+
           <button 
             onClick={() => { resetForm(); setIsModalOpen(true); }} 
             className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-md">+ NEW
