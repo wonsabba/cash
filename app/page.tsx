@@ -1,15 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { supabase } from '@/utils/supabase';
-import * as XLSX from 'xlsx'; // [추가] 엑셀 라이브러리
+import { useEffect, useState, useRef } from 'react';//useRef 임포트
+import { supabase } from '@/utils/supabase';//supabase 임포트 경로 수정
+import * as XLSX from 'xlsx'; // 엑셀 라이브러리
 
+// 카테고리 및 내역 타입 정의
 interface Category {
   id: number;
   code: string;
   name: string;
 }
 
+// 내역 타입 정의
 interface CashLog {
   id: number;
   transaction_date: string;
@@ -21,18 +23,24 @@ interface CashLog {
   memo: string;
 }
 
+//메타데이터 설정 (app/layout.tsx로 이동)
 export default function CashbookPage() {
-  const [logs, setLogs] = useState<CashLog[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false); // [추가] 통계 모달 상태
+  const [logs, setLogs] = useState<CashLog[]>([]);//내역 상태
+  const [categories, setCategories] = useState<Category[]>([]);//카테고리 상태
+  const [loading, setLoading] = useState(true);//로딩 상태
+  const [isModalOpen, setIsModalOpen] = useState(false);//신규/수정 모달 상태
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);//카테고리 모달 상태
+  const [editingId, setEditingId] = useState<number | null>(null);//수정 중인 내역 ID 상태
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false); //통계 모달 상태
 
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false); // [추가] 커스텀 확인창 상태
-  const [confirmConfig, setConfirmConfig] = useState({ title: '', message: '', action: () => {} });
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false); //커스텀 확인창 상태
+  const [confirmConfig, setConfirmConfig] = useState({ title: '', message: '', action: () => {} });//커스텀 확인창 설정 상태
 
+  // [추가] 카테고리 포커스 및 알림을 위한 Ref
+  const catCodeRef = useRef<HTMLInputElement>(null);
+  const catNameRef = useRef<HTMLInputElement>(null);
+
+  // 오늘 날짜를 "YYYY-MM-DD" 형식으로 반환하는 함수
   const getToday = () => {
     const date = new Date();
     const year = date.getFullYear();
@@ -41,12 +49,13 @@ export default function CashbookPage() {
     return `${year}-${month}-${day}`;
   };
 
-  // [추가] 커스텀 확인창 호출 함수
+  //커스텀 확인창 호출 함수
   const openConfirm = (title: string, message: string, action: () => void) => {
     setConfirmConfig({ title, message, action });
     setIsConfirmOpen(true);
   };
 
+  // 폼 데이터 상태 (신규/수정 공통)
   const [formData, setFormData] = useState({
     transaction_date: getToday(),
     type: 'OUT' as 'IN' | 'OUT',
@@ -57,28 +66,50 @@ export default function CashbookPage() {
     memo: '',
   });
 
+  //신규 카테고리 입력 상태
   const [newCat, setNewCat] = useState({ code: '', name: '' });
 
+  // 초기 데이터 로드 함수
   const initData = async () => {
     setLoading(true);
-    const { data: catData } = await supabase.from('categories').select('*').order('code');
-    if (catData) {
-      setCategories(catData);
+    const { data: catData } = await supabase.from('categories').select('*').order('code');//카테고리를 코드 순으로 정렬하여 가져옵니다.
+    if (catData) {//카테고리 데이터를 상태에 저장합니다.
+      setCategories(catData);//카테고리가 하나라도 존재하고, 현재 폼 데이터에 카테고리가 설정되어 있지 않다면, 첫 번째 카테고리를 기본값으로 설정합니다.
       if (catData.length > 0 && !formData.category) {
-        setFormData(prev => ({ ...prev, category: catData[0].code }));
+        setFormData(prev => ({ ...prev, category: catData[0].code }));//첫 번째 카테고리의 코드를 기본값으로 설정합니다.
       }
     }
+    //내역 데이터를 트랜잭션 날짜 기준으로 내림차순 정렬하여 가져옵니다.
     const { data: logData } = await supabase.from('cash_logs').select('*').order('transaction_date', { ascending: false });
     if (logData) setLogs(logData);
     setLoading(false);
   };
 
+  //컴포넌트가 처음 렌더링될 때 초기 데이터를 로드합니다.
   useEffect(() => { initData(); }, []);
 
-  // [수정] 신규 저장 및 수정을 동시에 처리
+  //신규 저장 및 수정을 동시에 처리
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.amount || !formData.description) return alert('내역과 금액을 입력해주세요!');
+
+    // 폼 요소들을 가져옵니다.
+    const form = e.currentTarget as HTMLFormElement;
+
+    // 1. 내역 필드 체크
+    if (!formData.description.trim()) {
+      const descInput = form.elements.namedItem('description') as HTMLInputElement;
+      descInput.setCustomValidity('사용 내역을 입력해주세요.');
+      descInput.reportValidity();
+      return;
+    }
+
+    // 2. 금액 필드 체크
+    if (!formData.amount) {
+      const amountInput = form.elements.namedItem('amount') as HTMLInputElement;
+      amountInput.setCustomValidity('금액을 입력해주세요.');
+      amountInput.reportValidity();
+      return;
+    }
 
     const payload = {
       ...formData,
@@ -86,11 +117,9 @@ export default function CashbookPage() {
     };
 
     if (editingId) {
-      // 수정 모드 (UPDATE)
       const { error } = await supabase.from('cash_logs').update(payload).eq('id', editingId);
       if (error) alert('수정 오류: ' + error.message);
     } else {
-      // 신규 모드 (INSERT)
       const { error } = await supabase.from('cash_logs').insert([payload]);
       if (error) alert('저장 오류: ' + error.message);
     }
@@ -146,8 +175,26 @@ export default function CashbookPage() {
   };
 
   const handleAddCategory = async () => {
-    if (!newCat.code || !newCat.name) return alert('코드와 이름을 입력하세요!');
-    await supabase.from('categories').insert([{ code: newCat.code.toUpperCase().trim(), name: newCat.name.trim() }]);
+    // 1. 코드 입력 확인
+    if (!newCat.code.trim()) {
+      catCodeRef.current?.setCustomValidity('코드를 입력해주세요. (예: 10)');
+      catCodeRef.current?.reportValidity();
+      return;
+    }
+
+    // 2. 명칭 입력 확인
+    if (!newCat.name.trim()) {
+      catNameRef.current?.setCustomValidity('명칭을 입력해주세요. (예: 식비)');
+      catNameRef.current?.reportValidity();
+      return;
+    }
+
+    // 데이터 저장 로직 (기존과 동일)
+    await supabase.from('categories').insert([{ 
+      code: newCat.code.toUpperCase().trim(), 
+      name: newCat.name.trim() 
+    }]);
+    
     setNewCat({ code: '', name: '' });
     initData();
   };
@@ -333,7 +380,11 @@ export default function CashbookPage() {
               <button onClick={resetForm} className="text-gray-400 text-2xl px-2">&times;</button>
             </div>
             
-            <form onSubmit={handleSubmit} className="p-6 space-y-3">
+            {/* <form> 안에 있을 때: 명칭(name)으로 찾는 게 편함 (현재 내역 입력창 필수 확인 방식) */}
+            <form onSubmit={handleSubmit} 
+                className="p-6 space-y-3" 
+                noValidate // [이게 핵심!] 이걸 지우면 브라우저의 기본 Validation이 활성화되어, 커스텀 메시지가 제대로 표시되지 않습니다. (즉 그냥 이 입력란을 작성하세요 라고 뜸)
+            >
               {/* 입력 필드들 (날짜, 구분, 결제수단, 카테고리, 내역, 금액, 메모) */}
               <div className="grid grid-cols-2 gap-2">
                 <input type="date" value={formData.transaction_date} onChange={(e) => setFormData({...formData, transaction_date: e.target.value})} className="p-3 bg-gray-100 rounded-xl text-sm outline-none" />
@@ -391,14 +442,35 @@ export default function CashbookPage() {
                   {categories.map(cat => <option key={cat.code} value={cat.code}>{cat.name}</option>)}
                 </select>
               </div>
-              <input type="text" placeholder="어디에 쓰셨나요?" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full p-3 bg-gray-100 rounded-xl text-sm outline-none" />
-              <input type="number" placeholder="0" value={formData.amount} onChange={(e) => setFormData({...formData, amount: e.target.value})} className="w-full p-4 bg-blue-50 text-blue-600 text-2xl font-black text-right rounded-2xl outline-none" />
+              {/* 내역 입력 필드 */}
+              <input 
+                name="description" // name 추가
+                type="text" 
+                placeholder="어디에 쓰셨나요?" 
+                required
+                value={formData.description} 
+                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                onInput={(e) => (e.currentTarget as HTMLInputElement).setCustomValidity('')} // 메시지 초기화
+                className="w-full p-3 bg-gray-100 rounded-xl text-sm outline-none" 
+              />
+              
+              {/* 금액 입력 필드 */}
+              <input 
+                name="amount" // name 추가
+                type="number" 
+                placeholder="0" 
+                required
+                value={formData.amount} 
+                onChange={(e) => setFormData({...formData, amount: e.target.value})} 
+                onInput={(e) => (e.currentTarget as HTMLInputElement).setCustomValidity('')} // 메시지 초기화
+                className="w-full p-4 bg-blue-50 text-blue-600 text-2xl font-black text-right rounded-2xl outline-none" 
+              />
               <input type="text" placeholder="메모 (선택)" value={formData.memo} onChange={(e) => setFormData({...formData, memo: e.target.value})} className="w-full p-3 bg-gray-100 rounded-xl text-sm outline-none" />
               
               {/* [수정된 버튼 영역] */}
               <div className="flex flex-col gap-2 pt-4">
                 <button type="submit" className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold text-lg shadow-lg hover:bg-blue-700 transition-all">
-                  {editingId ? '수정 완료' : '저장하기'}
+                  {editingId ? '수정 완료' : '저장'}
                 </button>
                 
                 <div className="flex gap-2">
@@ -436,9 +508,30 @@ export default function CashbookPage() {
               </div>
               <div className="bg-blue-50 p-4 rounded-2xl space-y-2">
                 <div className="grid grid-cols-2 gap-2">
-                  <input type="text" placeholder="코드" value={newCat.code} onChange={(e) => setNewCat({...newCat, code: e.target.value})} className="w-full p-2.5 rounded-lg text-xs border-none outline-none" />
-                  <input type="text" placeholder="이름" value={newCat.name} onChange={(e) => setNewCat({...newCat, name: e.target.value})} className="w-full p-2.5 rounded-lg text-xs border-none outline-none" />
+                  <input 
+                    ref={catCodeRef} // [추가]
+                    type="text" 
+                    placeholder="코드" 
+                    value={newCat.code} 
+                    onChange={(e) => {
+                      e.target.setCustomValidity(''); // 입력 시 메시지 초기화
+                      setNewCat({...newCat, code: e.target.value});
+                    }} 
+                    className="w-full p-2.5 rounded-lg text-xs border-none outline-none" 
+                  />
+                  <input 
+                    ref={catNameRef} // [추가]
+                    type="text" 
+                    placeholder="명칭" 
+                    value={newCat.name} 
+                    onChange={(e) => {
+                      e.target.setCustomValidity(''); // 입력 시 메시지 초기화
+                      setNewCat({...newCat, name: e.target.value});
+                    }} 
+                    className="w-full p-2.5 rounded-lg text-xs border-none outline-none" 
+                  />
                 </div>
+                {/*<form> 밖에 있을 때: 명칭(Ref)로 직접 찍는 게 편함 (현재 카테고리 입력창 필수확인 방식) */}
                 <button onClick={handleAddCategory} className="w-full bg-blue-600 text-white py-2.5 rounded-xl font-bold text-xs">추가</button>
               </div>
             </div>
